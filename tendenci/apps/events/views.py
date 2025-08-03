@@ -750,6 +750,7 @@ def edit(request, id, form_class=EventForm, template_name="events/edit.html"):
             # update all permissions and save the model
             event = update_perms_and_save(request, form_event, event)
             form_event.save_m2m()
+            event.set_primary_group()
 
             EventLog.objects.log(instance=event)
 
@@ -1714,6 +1715,7 @@ def add(request, year=None, month=None, day=None, is_template=False, parent_even
                 event = update_perms_and_save(request, form_event, event)
                 groups = form_event.cleaned_data['groups']
                 event.groups.set(groups)
+                event.set_primary_group()
                 if is_template:
                     event.status_detail = 'template'
                 event.save(log=False)
@@ -2658,9 +2660,9 @@ def register(request, event_id=0,
         if request.user.is_authenticated:
             profile = request.user.profile
             if not event.is_registrant_user(request.user):
-                initial = {'first_name':request.user.first_name,
-                            'last_name':request.user.last_name,
-                            'email':request.user.email,}
+                initial = {'first_name': request.user.first_name,
+                            'last_name': request.user.last_name,
+                            'email': [request.user.email, ''],}
                 if profile:
                     initial.update({'company_name': profile.company,
                                     'phone':profile.phone,

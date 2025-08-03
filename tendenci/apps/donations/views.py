@@ -113,6 +113,7 @@ def add(request, form_class=DonationForm, template_name="donations/add.html"):
                             'donation': donation,
                             'invoice': invoice,
                             'request': request,
+                            'donation_label': get_setting('module', 'donations', 'label')
                         }
                         notification.send_emails(recipients,'donation_added', extra_context)
 
@@ -127,7 +128,7 @@ def add(request, form_class=DonationForm, template_name="donations/add.html"):
             if donation.payment_method.lower() in ['cc', 'credit card', 'paypal']:
                 return HttpResponseRedirect(reverse('payment.pay_online', args=[invoice.id, invoice.guid]))
             else:
-                return HttpResponseRedirect(reverse('donation.add_confirm', args=[donation.id]))
+                return HttpResponseRedirect(reverse('donation.add_confirm', args=[donation.id, donation.guid]))
     else:
         form = form_class(user=request.user)
         captcha_form = CaptchaForm()
@@ -143,10 +144,11 @@ def add(request, form_class=DonationForm, template_name="donations/add.html"):
         'currency_symbol': currency_symbol})
 
 
-def add_confirm(request, id, template_name="donations/add_confirm.html"):
-    donation = get_object_or_404(Donation, pk=id)
+def add_confirm(request, id, guid, template_name="donations/add_confirm.html"):
+    donation = get_object_or_404(Donation, pk=id, guid=guid)
     EventLog.objects.log(instance=donation)
-    return render_to_resp(request=request, template_name=template_name)
+    return render_to_resp(request=request, template_name=template_name,
+                           context={'donation': donation})
 
 
 @login_required
